@@ -9,7 +9,7 @@
     "routes": [
         {
             "src": "/",
-            "dest": "/index.html"
+            "dest": "/羊毛男士上装布局整合.html"
         }
     ]
 }
