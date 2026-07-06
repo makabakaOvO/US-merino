@@ -2,7 +2,7 @@
     "version": 2,
     "builds": [
         {
-            "src": "羊毛男士上装布局整合.html",
+            "src": "*.html",
             "use": "@vercel/static"
         }
     ],
