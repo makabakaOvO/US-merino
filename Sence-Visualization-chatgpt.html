@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>男士羊毛/羊毛混纺上装场景排序可视化</title>
+  <style>
+    :root{
+      --bg:#f4f7fb; --card:#ffffff; --ink:#152238; --muted:#64748b; --line:#dbe4ef;
+      --blue:#2563eb; --green:#0f9f6e; --amber:#f59e0b; --violet:#7c3aed; --red:#dc2626;
+      --teal:#0891b2; --slate:#475569; --shadow:0 14px 35px rgba(15,35,65,.10);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;padding:26px}
+    .wrap{max-width:1280px;margin:0 auto}
+    .hero{background:linear-gradient(135deg,#10233f 0%,#1e3a8a 48%,#0f766e 100%);border-radius:24px;color:#fff;padding:34px 36px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .hero:after{content:"";position:absolute;right:-80px;top:-80px;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.12)}
+    .hero h1{font-size:30px;letter-spacing:.2px;margin-bottom:8px}
+    .hero p{font-size:15px;opacity:.88;max-width:900px}
+    .hero .meta{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+    .pill{font-size:12px;padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.20)}
+    .grid{display:grid;gap:18px;margin-top:20px}
+    .grid.cols-4{grid-template-columns:repeat(4,1fr)}
+    .grid.cols-2{grid-template-columns:1.1fr .9fr}
+    .card{background:var(--card);border:1px solid rgba(219,228,239,.9);border-radius:20px;padding:22px;box-shadow:var(--shadow)}
+    .card h2{font-size:18px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+    .card h3{font-size:15px;margin-bottom:6px}
+    .note{font-size:12px;color:var(--muted)}
+    .metric{padding:18px;border-radius:18px;background:#fff;border:1px solid var(--line);box-shadow:0 8px 20px rgba(15,35,65,.06)}
+    .metric strong{display:block;font-size:22px;color:var(--blue);line-height:1.1;margin-bottom:6px}
+    .metric span{font-size:12px;color:var(--muted)}
+    .method{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+    .method div{background:#f8fbff;border:1px solid var(--line);border-radius:14px;padding:13px}
+    .method b{font-size:13px}.method span{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+    .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .legend span{font-size:12px;padding:7px 10px;border-radius:999px;border:1px solid var(--line);background:#fff}
+    .tag-green{color:#047857}.tag-amber{color:#b45309}.tag-violet{color:#6d28d9}.tag-red{color:#b91c1c}
+    .matrix{position:relative;height:620px;border-radius:18px;border:1px solid var(--line);background:#fff;overflow:visible;margin-top:12px;padding:0}
+    .q{position:absolute;width:50%;height:50%;padding:14px;font-weight:700;font-size:13px;color:#334155}
+    .q1{left:50%;top:0;background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(255,255,255,.70))}
+    .q2{left:0;top:0;background:linear-gradient(135deg,rgba(124,58,237,.16),rgba(255,255,255,.70))}
+    .q3{left:50%;top:50%;background:linear-gradient(135deg,rgba(245,158,11,.16),rgba(255,255,255,.75))}
+    .q4{left:0;top:50%;background:linear-gradient(135deg,rgba(220,38,38,.13),rgba(255,255,255,.75))}
+    .axis-x,.axis-y{position:absolute;background:#93a4ba}.axis-x{left:0;right:0;top:50%;height:1px}.axis-y{top:0;bottom:0;left:50%;width:1px}
+    .axis-label-x{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted)}
+    .axis-label-y{position:absolute;left:10px;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:left center;font-size:12px;color:var(--muted)}
+    .bubble{position:absolute;border-radius:999px;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;font-weight:800;line-height:1.15;border:3px solid rgba(255,255,255,.9);box-shadow:0 8px 18px rgba(15,35,65,.24);cursor:default;z-index:4}
+    .bubble:hover{z-index:20}
+    .b-priority{background:var(--green)}.b-study{background:var(--amber)}.b-diff{background:var(--violet)}.b-eliminate{background:var(--red)}
+    .bubble .tip{display:none;position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);width:300px;max-width:min(300px,72vw);background:#0f172a;color:#fff;border-radius:12px;padding:11px 13px;font-size:12px;font-weight:500;text-align:left;line-height:1.55;box-shadow:0 18px 35px rgba(15,23,42,.28);pointer-events:none}
+    .bubble:hover .tip{display:block}.bubble[data-edge="left"] .tip{left:0;transform:none}.bubble[data-edge="right"] .tip{left:auto;right:0;transform:none}.bubble[data-edge="top"] .tip{bottom:auto;top:calc(100% + 10px)}
+    .rank-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .rank-row{display:grid;grid-template-columns:28px minmax(170px,1fr) 80px;gap:10px;align-items:center}
+    .rank-no{font-weight:800;color:#fff;background:#1e3a8a;border-radius:8px;text-align:center;padding:4px 0;font-size:12px}
+    .rank-name{font-size:13px;font-weight:700}.rank-score{font-size:12px;color:var(--muted);text-align:right}
+    .bar{height:10px;border-radius:999px;background:#e8eef7;overflow:hidden;margin-top:5px}.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#2563eb,#0f9f6e)}
+    .section-title{font-size:20px;margin:30px 0 12px;display:flex;align-items:center;gap:9px}
+    .tier{border-left:7px solid var(--green)}.tier.study{border-left-color:var(--amber)}.tier.diff{border-left-color:var(--violet)}.tier.eliminate{border-left-color:var(--red)}
+    .tier-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+    .tier-head .label{font-size:12px;color:#fff;padding:6px 10px;border-radius:999px;font-weight:800}.label.green{background:var(--green)}.label.amber{background:var(--amber)}.label.violet{background:var(--violet)}.label.red{background:var(--red)}
+    .scene-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+    .scene{background:#f8fbff;border:1px solid var(--line);border-radius:16px;padding:15px}
+    .scene-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.scene-title b{font-size:14px}.scene-title small{color:var(--muted);white-space:nowrap}
+    .scores{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.scores span{font-size:11px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 8px;color:#475569}.scores b{color:#111827}
+    .rationale{font-size:12px;color:#334155;margin-top:8px}.support{font-size:11px;color:#64748b;background:#fff;border-left:3px solid #cbd5e1;border-radius:10px;padding:9px 10px;margin-top:10px}
+    table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:16px;border:1px solid var(--line);font-size:12px;background:#fff}
+    th{background:#eff6ff;color:#1e3a8a;text-align:left;padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}td{padding:10px;border-bottom:1px solid #eef2f7;vertical-align:top}tr:last-child td{border-bottom:0}.center{text-align:center}.conclusion{font-weight:800;border-radius:999px;padding:4px 8px;display:inline-block;font-size:11px}.c1{background:#dcfce7;color:#047857}.c2{background:#fef3c7;color:#b45309}.c3{background:#ede9fe;color:#6d28d9}.c4{background:#fee2e2;color:#b91c1c}
+    .footer{font-size:11px;color:#64748b;margin-top:18px}.footer a{color:#2563eb;text-decoration:none}
+    @media(max-width:980px){.grid.cols-4,.grid.cols-2,.method,.scene-grid{grid-template-columns:1fr}.matrix{height:560px}.hero{padding:28px 24px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>男士羊毛/羊毛混纺上装：美国市场场景排序</h1>
+    <p>基于「场景频率 × 人群规模 × 痛点强度 × 羊毛价值」四维评分，筛选适合产品布局的重点场景。健身房不再作为单一场景判断，而拆分为“Active-to-Daily运动过渡”和“纯高强度健身房训练”。</p>
+    <div class="meta">
+      <span class="pill">美国成年男性</span><span class="pill">男士上装</span><span class="pill">羊毛/羊毛混纺</span><span class="pill">产品指导场景</span>
+    </div>
+  </section>
+
+  <div class="grid cols-4">
+    <div class="metric"><strong>4维</strong><span>频率 / 人群 / 痛点 / 羊毛价值</span></div>
+    <div class="metric"><strong>12个</strong><span>可用于布局判断的候选场景</span></div>
+    <div class="metric"><strong>2层</strong><span>健身房拆分：运动过渡 vs 高强度训练</span></div>
+    <div class="metric"><strong>20分</strong><span>每个场景综合满分</span></div>
+  </div>
+
+  <section class="card" style="margin-top:20px">
+    <h2>评分方法</h2>
+    <div class="method">
+      <div><b>① 场景频率</b><span>1=年几次；3=每周1-2次；5=几乎每天</span></div>
+      <div><b>② 人群规模</b><span>1=小众；3=中等；5=几乎全体男性都会经历</span></div>
+      <div><b>③ 痛点强度</b><span>1=可忽略；3=有痛点；5=不得不解决</span></div>
+      <div><b>④ 羊毛价值</b><span>1=不如棉/化纤；3=有优势；5=非常适配</span></div>
+    </div>
+    <div class="legend">
+      <span class="tag-green">高频 + 高羊毛价值 = 重点研究</span>
+      <span class="tag-amber">高频 + 中羊毛价值 = 可研究但要找强痛点</span>
+      <span class="tag-violet">低频 + 高羊毛价值 = 高客单价/差异化机会</span>
+      <span class="tag-red">低频或高频 + 羊毛价值低 = 暂不投入</span>
+    </div>
+  </section>
+
+  <div class="grid cols-2">
+    <section class="card">
+      <h2>四象限图：场景频率 × 羊毛价值</h2>
+      <p class="note">X轴为场景频率，Y轴为羊毛/羊毛混纺适配价值；气泡越大，代表人群规模和痛点强度越高。</p>
+      <div class="matrix" id="matrix">
+        <div class="q q1">重点研究区<br><span class="note">高频 + 高羊毛价值</span></div>
+        <div class="q q2">差异化机会区<br><span class="note">低频 + 高羊毛价值</span></div>
+        <div class="q q3">待验证区<br><span class="note">高频 + 中羊毛价值</span></div>
+        <div class="q q4">暂不投入区<br><span class="note">低价值或不适配</span></div>
+        <div class="axis-x"></div><div class="axis-y"></div>
+        <div class="axis-label-x">场景频率：低 → 高</div><div class="axis-label-y">羊毛适配价值：低 → 高</div>
+      </div>
+    </section>
+    <section class="card">
+      <h2>综合排序</h2>
+      <p class="note">综合分=四项评分相加。排序仍需结合象限分类判断，不建议只看总分。</p>
+      <div class="rank-list" id="rankList"></div>
+    </section>
+  </div>
+
+  <h2 class="section-title">分层结果</h2>
+  <section class="card tier" id="priorityBlock">
+    <div class="tier-head"><div><span class="label green">第一优先</span> <b>高频 + 高羊毛价值：重点研究对象</b></div><span class="note">建议投入产品线与主图/卖点研究</span></div>
+    <div class="scene-grid" id="priorityScenes"></div>
+  </section>
+
+  <section class="card tier study" style="margin-top:16px">
+    <div class="tier-head"><div><span class="label amber">第二优先</span> <b>高频 + 中羊毛价值：可研究但需找更强痛点</b></div><span class="note">适合做场景补充或转化卖点验证</span></div>
+    <div class="scene-grid" id="studyScenes"></div>
+  </section>
+
+  <section class="card tier diff" style="margin-top:16px">
+    <div class="tier-head"><div><span class="label violet">第三优先</span> <b>低频 + 高羊毛价值：高客单价 / 差异化机会</b></div><span class="note">适合精品线、季节线、功能背书线</span></div>
+    <div class="scene-grid" id="diffScenes"></div>
+  </section>
+
+  <section class="card tier eliminate" style="margin-top:16px">
+    <div class="tier-head"><div><span class="label red">暂时淘汰</span> <b>羊毛价值低：不作为男士羊毛上装第一阶段主线</b></div><span class="note">可作为排除边界，避免进入化纤主场</span></div>
+    <div class="scene-grid" id="eliminateScenes"></div>
+  </section>
+
+  <section class="card" style="margin-top:20px">
+    <h2>完整评分表</h2>
+    <table>
+      <thead><tr><th>排序</th><th>场景</th><th class="center">频率</th><th class="center">人群</th><th class="center">痛点</th><th class="center">羊毛价值</th><th class="center">综合</th><th>结论</th><th>产品指导</th></tr></thead>
+      <tbody id="scoreTable"></tbody>
+    </table>
+  </section>
+
+  <section class="card" style="margin-top:20px">
+    <h2>关键数据支撑</h2>
+    <div class="scene-grid">
+      <div class="support"><b>工作与通勤：</b>BLS American Time Use Survey显示，全职雇员工作日平均工作约8.5小时；Census ACS显示美国平均单程通勤约27分钟，独自开车通勤仍是主流。</div>
+      <div class="support"><b>办公着装：</b>Gallup办公着装调查显示，美国工作场景从正式西装转向business casual与休闲化，正式西装内搭不宜作为大众主线。</div>
+      <div class="support"><b>运动健身：</b>SFIA/行业报道显示跑步机、自由重量、力量训练、瑜伽/普拉提/低冲击训练都有大规模参与；但HIIT/CrossFit/拳击等高汗高强度训练更适合化纤。</div>
+      <div class="support"><b>户外与滑雪：</b>OIA显示美国户外参与人数超过1.8亿，徒步、露营等入口活动规模大；NSAA/SAM数据显示美国滑雪访问量保持高位，但频率和地域季节性更强。</div>
+      <div class="support"><b>差旅：</b>U.S. Travel与GBTA相关数据表明商务旅行仍有较大规模；差旅的少带、多穿、抗皱、抗味痛点适合羊毛/混纺做高客单价叙事。</div>
+      <div class="support"><b>羊毛价值：</b>Woolmark/IWTO资料支持羊毛在抗异味、吸湿、温湿度管理、动静切换场景中的优势，但在极致速干、强弹、高汗训练中不应与化纤正面竞争。</div>
+    </div>
+    <p class="footer">参考来源：BLS ATUS、U.S. Census ACS commuting、Gallup workplace attire、SFIA participation reports、OIA outdoor participation、U.S. Travel Association、GBTA、NSAA/SAM、Woolmark、IWTO，以及健身行业趋势报道。</p>
+  </section>
+</div>
+
+<script>
+const scenarios = [
+  {id:'S1', name:'工作日通勤 / 办公室', freq:5.0, pop:5.0, pain:4.5, wool:4.4, cat:'priority', product:'Office-ready Merino：POLO、亨利领、轻薄长袖、半拉链；强调空调温差、通勤轻汗、整洁体面。', support:'高频工作+通勤路径稳定；羊毛价值在温差、抗味、长时间穿着和体面感。'},
+  {id:'S2', name:'冬季日常保暖 / 冷天通勤打底', freq:4.3, pop:5.0, pain:4.6, wool:4.8, cat:'priority', product:'Daily Thermal Base Layer：200–250g圆领/半高领/亨利领；主打不臃肿、贴身保暖、进出室内不闷。', support:'冬季冷天、遛狗、通勤、铲雪、户外杂务等反复出现；羊毛控温优势清晰。'},
+  {id:'S3', name:'周末社交 / 休闲外出', freq:3.6, pop:4.6, pain:3.8, wool:4.2, cat:'priority', product:'Smart Casual Merino：轻薄针织圆领、POLO、overshirt；主打比T恤更体面、比衬衫更放松。', support:'brunch、约会、餐厅、酒吧、购物等近距离社交强化面料质感和外观价值。'},
+  {id:'S4', name:'周末轻户外 / 徒步 / 露营', freq:2.8, pop:4.5, pain:4.7, wool:5.0, cat:'diff', product:'Light Outdoor Base Layer：长袖T、半拉链、轻薄连帽；主打动静切换、抗味、多日穿。', support:'美国户外参与人群大；徒步露营是羊毛认知成熟的高价值入口。'},
+  {id:'S5', name:'Active-to-Daily运动过渡', freq:3.8, pop:4.2, pain:3.8, wool:4.0, cat:'study', product:'不做纯健身房训练服；做冷天跑步、通勤骑行、轻训练、运动后去咖啡/开车/接孩子的过渡上衣。', support:'跑步机、基础有氧、轻训练和低冲击运动覆盖面大；羊毛价值在抗味、汗后不冷、运动后可继续穿。'},
+  {id:'S6', name:'商务差旅 / 机场 / 酒店 / 多日穿', freq:2.1, pop:3.7, pain:5.0, wool:5.0, cat:'diff', product:'Travel Merino：POLO、长袖T、半拉链；强调pack less、stay fresh、plane-to-meeting。', support:'低频但痛点强：少带衣服、抗皱、连续穿不臭、飞机冷、落地开会。'},
+  {id:'S7', name:'商务休闲 / 会议 / 客户拜访', freq:3.5, pop:4.2, pain:3.6, wool:3.8, cat:'study', product:'Business Casual Merino：细针POLO、轻薄针织、半拉链；需要用“专业但舒适”强化痛点。', support:'business casual是更大的办公着装盘，但棉/普通针织也能替代，需继续找VOC痛点。'},
+  {id:'S8', name:'城市移动 / 步行 / 骑车通勤', freq:3.0, pop:3.8, pain:3.9, wool:4.1, cat:'study', product:'Urban Mobility Layer：轻薄混纺短袖/长袖，隐藏透气、微弹、简洁外观。', support:'步行/公共交通/骑车通勤会带来轻汗与温差，但人群规模低于汽车通勤。'},
+  {id:'S9', name:'混合办公 / 居家办公', freq:4.5, pop:4.0, pain:2.8, wool:3.0, cat:'study', product:'作为S1/S3的补充场景，不单独主推；主打视频会议体面、居家舒适、出门不换衣。', support:'远程/混合办公频率高，但“居家穿羊毛”的主动购买动机较弱。'},
+  {id:'S10', name:'滑雪 / 雪地旅行', freq:1.2, pop:2.7, pain:4.7, wool:5.0, cat:'diff', product:'Ski Base Layer：200–250g贴身层、半拉链、拇指孔、平缝；适合冬季高客单价胶囊线。', support:'滑雪场景羊毛认知强、客单价高，但频率低、季节性和地域性明显。'},
+  {id:'S11', name:'家庭休闲 / 社区活动', freq:3.0, pop:4.3, pain:3.0, wool:3.5, cat:'study', product:'作为周末社交和通勤产品的附加使用场景；不建议独立成线。', support:'家庭活动覆盖面大，但着装痛点通常不够尖锐，羊毛是加分项。'},
+  {id:'S12', name:'纯高强度健身房训练', freq:3.5, pop:3.5, pain:4.0, wool:2.0, cat:'eliminate', product:'不作为第一阶段主线；HIIT、CrossFit、拳击、爆汗训练应避开，与化纤速干弹性品类正面竞争风险高。', support:'高汗、高弹、极致速干需求更适配Dri-FIT/Lululemon/Under Armour等化纤体系。'},
+  {id:'S13', name:'正式商务 / 西装内搭', freq:1.3, pop:2.0, pain:3.2, wool:4.5, cat:'diff', product:'高端小众线：精纺V领、半高领、高领毛衣；适合作为形象款，不做第一阶段规模主线。', support:'正式西装穿着频率下降，但羊毛在高级质感和正装内搭中价值高。'}
+];
+const catMap = {priority:{label:'重点研究', cls:'c1', bubble:'b-priority', target:'priorityScenes'}, study:{label:'可研究', cls:'c2', bubble:'b-study', target:'studyScenes'}, diff:{label:'差异化机会', cls:'c3', bubble:'b-diff', target:'diffScenes'}, eliminate:{label:'暂不投入', cls:'c4', bubble:'b-eliminate', target:'eliminateScenes'}};
+function score(s){return +(s.freq+s.pop+s.pain+s.wool).toFixed(1)}
+function bubbleSize(s){return Math.max(46, Math.min(82,(s.pop+s.pain)*7.6));}
+function pct(v){const pad=8; return (pad + (v-1)/4*(100-pad*2)).toFixed(2)+'%'}
+function renderMatrix(){
+  const m=document.getElementById('matrix');
+  scenarios.forEach(s=>{
+    const b=document.createElement('div');
+    b.className='bubble '+catMap[s.cat].bubble;
+    const size=bubbleSize(s);
+    const leftVal=parseFloat(pct(s.freq));
+    const bottomVal=parseFloat(pct(s.wool));
+    b.style.width=size+'px'; b.style.height=size+'px'; b.style.left=leftVal+'%'; b.style.bottom=bottomVal+'%'; b.style.transform='translate(-50%,50%)';
+    if(leftVal<16) b.dataset.edge='left';
+    if(leftVal>84) b.dataset.edge='right';
+    if(bottomVal>84) b.dataset.edge='top';
+    b.innerHTML=`${s.id}<div class="tip"><b>${s.id} ${s.name}</b><br>频率 ${s.freq}/5｜人群 ${s.pop}/5｜痛点 ${s.pain}/5｜羊毛价值 ${s.wool}/5<br>综合：${score(s)}/20<br>${s.product}</div>`;
+    m.appendChild(b);
+  });
+}
+function sceneCard(s){return `<div class="scene"><div class="scene-title"><b>${s.id} · ${s.name}</b><small>${score(s)}/20</small></div><div class="scores"><span>频率 <b>${s.freq}</b></span><span>人群 <b>${s.pop}</b></span><span>痛点 <b>${s.pain}</b></span><span>羊毛 <b>${s.wool}</b></span></div><p class="rationale">${s.product}</p><div class="support"><b>数据/内容支撑：</b>${s.support}</div></div>`}
+function renderScenes(){
+  Object.keys(catMap).forEach(c=>document.getElementById(catMap[c].target).innerHTML=scenarios.filter(s=>s.cat===c).map(sceneCard).join(''));
+}
+function renderRank(){
+  const sorted=[...scenarios].sort((a,b)=>score(b)-score(a));
+  document.getElementById('rankList').innerHTML=sorted.slice(0,10).map((s,i)=>`<div class="rank-row"><div class="rank-no">${i+1}</div><div><div class="rank-name">${s.id} ${s.name}</div><div class="bar"><i style="width:${score(s)/20*100}%"></i></div></div><div class="rank-score">${score(s)}/20</div></div>`).join('');
+  document.getElementById('scoreTable').innerHTML=sorted.map((s,i)=>`<tr><td>${i+1}</td><td><b>${s.id}</b> ${s.name}</td><td class="center">${s.freq}</td><td class="center">${s.pop}</td><td class="center">${s.pain}</td><td class="center">${s.wool}</td><td class="center"><b>${score(s)}</b>/20</td><td><span class="conclusion ${catMap[s.cat].cls}">${catMap[s.cat].label}</span></td><td>${s.product}</td></tr>`).join('');
+}
+renderMatrix();renderScenes();renderRank();
+</script>
+</body>
+</html>
